@@ -16,10 +16,11 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
 {
     opt.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"));
 }); // Registering the database context service.
+
+builder.Services.AddCors(); // Adding controller services to the application.
 #endregion
 
 var app = builder.Build();
-
 #region Middleware Configuration
 // Configure the HTTP request pipeline. // Middleware configuration.
 // if (app.Environment.IsDevelopment())
@@ -29,7 +30,9 @@ var app = builder.Build();
 
 //app.UseHttpsRedirection(); // Redirect HTTP requests to HTTPS.
 #endregion
-
+app.UseCors(opts => 
+    opts.AllowAnyHeader().
+    AllowAnyMethod().WithOrigins("http://localhost:4200", "https://localhost:4200"));
 app.MapControllers();
 
 app.Run();
