@@ -1,7 +1,12 @@
 // Startup Class
 
+using System.Text;
 using API.Data;
+using API.Interfaces;
+using API.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args); // For building the web application.
 
@@ -18,6 +23,19 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
 }); // Registering the database context service.
 
 builder.Services.AddCors(); // Adding controller services to the application.
+builder.Services.AddScoped<ITokenService, TokenService>(); // Registering the token service with scoped lifetime (only for http request that need it).   
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+       var tokenKey = builder.Configuration["TokenKey"] ?? throw new Exception("TokenKey not found - Program.cs");
+       options.TokenValidationParameters = new TokenValidationParameters
+       {
+           ValidateIssuerSigningKey = true,
+           IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(tokenKey)),
+           ValidateIssuer = false,
+           ValidateAudience = false
+       }; 
+    });
 #endregion
 
 var app = builder.Build();
@@ -33,6 +51,8 @@ var app = builder.Build();
 app.UseCors(opts => 
     opts.AllowAnyHeader().
     AllowAnyMethod().WithOrigins("http://localhost:4200", "https://localhost:4200"));
+app.UseAuthentication(); // Adding authentication middleware to the pipeline.
+app.UseAuthorization(); // Adding authorization middleware to the pipeline.
 app.MapControllers();
 
 app.Run();
